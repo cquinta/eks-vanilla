@@ -1,0 +1,31 @@
+digraph INFRA {
+  node [ color = "black", fillcolor = "#E6E6E6", height =1, style = "filled,bold,rounded", fontname = "Arial" ];
+  "aws_eks_cluster.main" [ label = "aws_eks_cluster.main
+(AWS::EKS::Cluster)", shape =rectangle, fillcolor = "#B7E0FF" ];
+  "aws_iam_role.eks_cluster_role" [ label = "aws_iam_role.eks_cluster_role
+(AWS::IAM::Role)", shape =rectangle ];
+  "aws_iam_role.eks_nodes_role" [ label = "aws_iam_role.eks_nodes_role
+(AWS::IAM::Role)", shape =rectangle ];
+  "aws_iam_instance_profile.nodes" [ label = "aws_iam_instance_profile.nodes
+(AWS::IAM::InstanceProfile)", shape =rectangle ];
+  "aws_kms_key.main" [ label = "aws_kms_key.main
+(AWS::KMS::Key)", shape =rectangle ];
+  "aws_kms_alias.main" [ label = "aws_kms_alias.main
+(AWS::KMS::Alias)", shape =rectangle ];
+  "aws_iam_openid_connect_provider.eks" [ label = "aws_iam_openid_connect_provider.eks
+(AWS::IAM::OIDCProvider)", shape =rectangle ];
+  "aws_security_group_rule.nodeports" [ label = "aws_security_group_rule.nodeports
+(AWS::EC2::SecurityGroupIngress)", shape =rectangle ];
+  "aws_security_group_rule.coredns_udp" [ label = "aws_security_group_rule.coredns_udp
+(AWS::EC2::SecurityGroupIngress)", shape =rectangle ];
+  "aws_security_group_rule.coredns_tcp" [ label = "aws_security_group_rule.coredns_tcp
+(AWS::EC2::SecurityGroupIngress)", shape =rectangle ];
+  "aws_eks_cluster.main" -> "aws_iam_role.eks_cluster_role";
+  "aws_eks_cluster.main" -> "aws_kms_key.main";
+  "aws_iam_instance_profile.nodes" -> "aws_iam_role.eks_nodes_role";
+  "aws_kms_alias.main" -> "aws_kms_key.main";
+  "aws_iam_openid_connect_provider.eks" -> "aws_eks_cluster.main";
+  "aws_security_group_rule.nodeports" -> "aws_eks_cluster.main";
+  "aws_security_group_rule.coredns_udp" -> "aws_eks_cluster.main";
+  "aws_security_group_rule.coredns_tcp" -> "aws_eks_cluster.main";
+}
