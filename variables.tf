@@ -29,6 +29,53 @@ variable "ssm_pods_subnets" {
 }
 
 variable "k8s_version" {
-    type = string
-    description = "versão do kubernetes"
+  type        = string
+  description = "versão do kubernetes"
+}
+
+variable "auto_scale_options" {
+  type = object({
+    min     = number
+    max     = number
+    desired = number
+  })
+  description = "Configurações de Autoscaling do Cluster"
+}
+
+variable "auto_scale_options_main" {
+  type = object({
+    min     = number
+    max     = number
+    desired = number
+  })
+  description = "Configurações de Autoscaling do Cluster para o cluster principal"
+}
+
+variable "nodes_instance_sizes" {
+  type        = list(string)
+  description = "Lista de tamanhos das instâncias do projeto"
+}
+
+variable "addon_cni_version" {
+  type        = string
+  default     = "v1.19.2-eksbuild.1"
+  description = "Versão do Addon da VPC CNI"
+}
+
+variable "addon_coredns_version" {
+  type        = string
+  default     = "v1.11.4-eksbuild.2"
+  description = "Versão do Addon do CoreDNS"
+}
+
+variable "addon_kubeproxy_version" {
+  type        = string
+  default     = "v1.32.0-eksbuild.2"
+  description = "Versão do Addon do Kube-Proxy"
+}
+
+variable "custom_ami" {
+  type        = string
+  description = "AMI ID customizada para os nodes"
+  default     = "ami-03571be2203184664"
 }
