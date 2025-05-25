@@ -85,7 +85,7 @@ metadata:
   name: chip
   namespace: chip
 spec:
-  maxReplicas: 500
+  maxReplicas: 10
   minReplicas: 2
   metrics:
     - type: Resource
