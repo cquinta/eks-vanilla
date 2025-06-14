@@ -1,31 +1,66 @@
 digraph INFRA {
   node [ color = "black", fillcolor = "#E6E6E6", height =1, style = "filled,bold,rounded", fontname = "Arial" ];
-  "aws_eks_cluster.main" [ label = "aws_eks_cluster.main
+  "eks-cluster" [ label = "eks-cluster
 (AWS::EKS::Cluster)", shape =rectangle, fillcolor = "#B7E0FF" ];
-  "aws_iam_role.eks_cluster_role" [ label = "aws_iam_role.eks_cluster_role
+  "eks-cluster-role" [ label = "eks-cluster-role
 (AWS::IAM::Role)", shape =rectangle ];
-  "aws_iam_role.eks_nodes_role" [ label = "aws_iam_role.eks_nodes_role
+  "eks-nodes-role" [ label = "eks-nodes-role
 (AWS::IAM::Role)", shape =rectangle ];
-  "aws_iam_instance_profile.nodes" [ label = "aws_iam_instance_profile.nodes
+  "nodes-instance-profile" [ label = "nodes-instance-profile
 (AWS::IAM::InstanceProfile)", shape =rectangle ];
-  "aws_kms_key.main" [ label = "aws_kms_key.main
+  "kms-key" [ label = "kms-key
 (AWS::KMS::Key)", shape =rectangle ];
-  "aws_kms_alias.main" [ label = "aws_kms_alias.main
+  "kms-alias" [ label = "kms-alias
 (AWS::KMS::Alias)", shape =rectangle ];
-  "aws_iam_openid_connect_provider.eks" [ label = "aws_iam_openid_connect_provider.eks
+  "eks-oidc-provider" [ label = "eks-oidc-provider
 (AWS::IAM::OIDCProvider)", shape =rectangle ];
-  "aws_security_group_rule.nodeports" [ label = "aws_security_group_rule.nodeports
+  "nodeports-security-group-rule" [ label = "nodeports-security-group-rule
 (AWS::EC2::SecurityGroupIngress)", shape =rectangle ];
-  "aws_security_group_rule.coredns_udp" [ label = "aws_security_group_rule.coredns_udp
+  "coredns-udp-security-group-rule" [ label = "coredns-udp-security-group-rule
 (AWS::EC2::SecurityGroupIngress)", shape =rectangle ];
-  "aws_security_group_rule.coredns_tcp" [ label = "aws_security_group_rule.coredns_tcp
+  "coredns-tcp-security-group-rule" [ label = "coredns-tcp-security-group-rule
 (AWS::EC2::SecurityGroupIngress)", shape =rectangle ];
-  "aws_eks_cluster.main" -> "aws_iam_role.eks_cluster_role";
-  "aws_eks_cluster.main" -> "aws_kms_key.main";
-  "aws_iam_instance_profile.nodes" -> "aws_iam_role.eks_nodes_role";
-  "aws_kms_alias.main" -> "aws_kms_key.main";
-  "aws_iam_openid_connect_provider.eks" -> "aws_eks_cluster.main";
-  "aws_security_group_rule.nodeports" -> "aws_eks_cluster.main";
-  "aws_security_group_rule.coredns_udp" -> "aws_eks_cluster.main";
-  "aws_security_group_rule.coredns_tcp" -> "aws_eks_cluster.main";
+  "karpenter-sqs-queue" [ label = "karpenter-sqs-queue
+(AWS::SQS::Queue)", shape =rectangle, fillcolor = "#CCE0AC" ];
+  "karpenter-sqs-queue-policy" [ label = "karpenter-sqs-queue-policy
+(AWS::SQS::QueuePolicy)", shape =rectangle ];
+  "karpenter-instance-terminate-event-rule" [ label = "karpenter-instance-terminate-event-rule
+(AWS::Events::Rule)", shape =rectangle, fillcolor = "#CCE0AC" ];
+  "karpenter-instance-terminate-event-target" [ label = "karpenter-instance-terminate-event-target
+(AWS::Events::Target)", shape =rectangle, fillcolor = "#CCE0AC" ];
+  "karpenter-scheduled-change-event-rule" [ label = "karpenter-scheduled-change-event-rule
+(AWS::Events::Rule)", shape =rectangle, fillcolor = "#CCE0AC" ];
+  "karpenter-scheduled-change-event-target" [ label = "karpenter-scheduled-change-event-target
+(AWS::Events::Target)", shape =rectangle, fillcolor = "#CCE0AC" ];
+  "karpenter-spot-termination-event-rule" [ label = "karpenter-spot-termination-event-rule
+(AWS::Events::Rule)", shape =rectangle, fillcolor = "#CCE0AC" ];
+  "karpenter-spot-termination-event-target" [ label = "karpenter-spot-termination-event-target
+(AWS::Events::Target)", shape =rectangle, fillcolor = "#CCE0AC" ];
+  "karpenter-rebalance-event-rule" [ label = "karpenter-rebalance-event-rule
+(AWS::Events::Rule)", shape =rectangle, fillcolor = "#CCE0AC" ];
+  "karpenter-rebalance-event-target" [ label = "karpenter-rebalance-event-target
+(AWS::Events::Target)", shape =rectangle, fillcolor = "#CCE0AC" ];
+  "karpenter-state-change-event-rule" [ label = "karpenter-state-change-event-rule
+(AWS::Events::Rule)", shape =rectangle, fillcolor = "#CCE0AC" ];
+  "karpenter-state-change-event-target" [ label = "karpenter-state-change-event-target
+(AWS::Events::Target)", shape =rectangle, fillcolor = "#CCE0AC" ];
+  "eks-cluster" -> "eks-cluster-role";
+  "eks-cluster" -> "kms-key";
+  "nodes-instance-profile" -> "eks-nodes-role";
+  "kms-alias" -> "kms-key";
+  "eks-oidc-provider" -> "eks-cluster";
+  "nodeports-security-group-rule" -> "eks-cluster";
+  "coredns-udp-security-group-rule" -> "eks-cluster";
+  "coredns-tcp-security-group-rule" -> "eks-cluster";
+  "karpenter-sqs-queue-policy" -> "karpenter-sqs-queue";
+  "karpenter-instance-terminate-event-target" -> "karpenter-instance-terminate-event-rule";
+  "karpenter-instance-terminate-event-target" -> "karpenter-sqs-queue";
+  "karpenter-scheduled-change-event-target" -> "karpenter-scheduled-change-event-rule";
+  "karpenter-scheduled-change-event-target" -> "karpenter-sqs-queue";
+  "karpenter-spot-termination-event-target" -> "karpenter-spot-termination-event-rule";
+  "karpenter-spot-termination-event-target" -> "karpenter-sqs-queue";
+  "karpenter-rebalance-event-target" -> "karpenter-rebalance-event-rule";
+  "karpenter-rebalance-event-target" -> "karpenter-sqs-queue";
+  "karpenter-state-change-event-target" -> "karpenter-state-change-event-rule";
+  "karpenter-state-change-event-target" -> "karpenter-sqs-queue";
 }

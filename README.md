@@ -1,168 +1,176 @@
-# AWS EKS Cluster Infrastructure as Code with Terraform
+# AWS EKS Cluster with Karpenter Auto-scaling Infrastructure
 
-This project provides a comprehensive Infrastructure as Code (IaC) solution for deploying and managing an Amazon Elastic Kubernetes Service (EKS) cluster using Terraform. It implements secure, production-ready EKS infrastructure with encrypted storage, OIDC authentication, and proper IAM roles and security configurations.
+This project provides an Infrastructure as Code (IaC) solution for deploying and managing a production-ready Amazon EKS cluster with Karpenter-based auto-scaling capabilities. It combines advanced node management, security features, and monitoring capabilities to deliver a robust Kubernetes infrastructure on AWS.
 
-The infrastructure includes a fully configured EKS cluster with node management, security groups, KMS encryption, and OIDC integration. It supports features such as cluster logging, zonal shift for high availability, and proper network segmentation using VPC subnets. The configuration follows AWS best practices for running containerized workloads in a production environment.
+The infrastructure is defined using Terraform and includes comprehensive setup of EKS cluster components, IAM roles, security groups, monitoring tools, and auto-scaling configurations. It features Karpenter for intelligent node provisioning, CoreDNS for service discovery, and various AWS services integration for enhanced cluster management and monitoring.
 
 ## Repository Structure
 ```
 .
-├── backend.tf          # S3 backend configuration for Terraform state
-├── data.tf            # AWS SSM parameter store data source definitions
-├── eks.tf             # EKS cluster configuration and settings
-├── iam_cluster.tf     # IAM roles and policies for the EKS cluster
-├── iam_nodes.tf       # IAM roles and policies for EKS worker nodes
-├── kms.tf             # KMS key configuration for cluster encryption
-├── oidc.tf           # OIDC provider setup for cluster authentication
-├── providers.tf       # AWS provider configuration
-├── sg.tf             # Security group rules for cluster networking
-└── variables.tf       # Input variables for the Terraform configuration
+├── access_entries.tf          # EKS cluster access configuration
+├── addons.tf                 # EKS add-ons configuration (CNI, CoreDNS, Kube-proxy)
+├── aws_auth.tf              # AWS authentication configuration for EKS
+├── backend.tf               # Terraform S3 backend configuration
+├── eks.tf                  # Main EKS cluster configuration
+├── fargate.tf             # Fargate profile configuration
+├── helm_karpenter.tf     # Karpenter Helm chart deployment
+├── iam_*.tf             # Various IAM role configurations
+├── kms.tf              # KMS key configuration for cluster encryption
+├── lambda/            # Lambda functions for cluster management
+│   └── coredns/      # CoreDNS configuration fix
+├── files/            # Configuration files for various components
+│   └── karpenter/   # Karpenter node pool and EC2 configurations
+├── sg.tf           # Security group configurations
+├── sqs_karpenter.tf # SQS queue for Karpenter events
+└── variables.tf    # Terraform variables definition
 ```
 
 ## Usage Instructions
 ### Prerequisites
 - AWS CLI configured with appropriate credentials
-- Terraform >= 0.12.x
-- AWS account with permissions to create:
-  - EKS clusters
-  - IAM roles and policies
-  - KMS keys
-  - Security groups
-  - OIDC providers
+- Terraform >= 1.0.0
+- kubectl
+- helm >= 3.0.0
+- An AWS S3 bucket for Terraform state
+- AWS IAM permissions to create EKS clusters and related resources
 
 ### Installation
 
-1. Clone the repository:
+1. Configure AWS credentials:
 ```bash
-git clone <repository-url>
-cd <repository-name>
+aws configure
 ```
 
 2. Initialize Terraform:
 ```bash
-terraform init
+terraform init \
+  -backend-config="bucket=your-terraform-state-bucket" \
+  -backend-config="key=eks/terraform.tfstate" \
+  -backend-config="region=your-aws-region"
 ```
 
-3. Configure required variables in a `terraform.tfvars` file:
+3. Create a terraform.tfvars file:
 ```hcl
-project_name        = "your-project-name"
-region             = "your-aws-region"
-ssm_vpc            = "ssm-parameter-for-vpc"
-ssm_public_subnets = ["ssm-parameter-for-public-subnet-1", "ssm-parameter-for-public-subnet-2"]
-ssm_private_subnets = ["ssm-parameter-for-private-subnet-1", "ssm-parameter-for-private-subnet-2"]
-ssm_pods_subnets    = ["ssm-parameter-for-pod-subnet-1", "ssm-parameter-for-pod-subnet-2"]
-k8s_version        = "1.24"
+project_name = "your-project-name"
+region = "your-aws-region"
+k8s_version = "1.28"
+auto_scale_options = {
+  min     = 1
+  max     = 10
+  desired = 2
+}
+```
+
+4. Apply the configuration:
+```bash
+terraform plan
+terraform apply
 ```
 
 ### Quick Start
 
-1. Review the planned changes:
+1. Configure kubectl for your new cluster:
 ```bash
-terraform plan
+aws eks update-kubeconfig --name your-project-name --region your-aws-region
 ```
 
-2. Apply the configuration:
+2. Verify cluster access:
 ```bash
-terraform apply
+kubectl get nodes
 ```
 
-3. After successful application, retrieve the cluster configuration:
+3. Deploy a sample application:
 ```bash
-aws eks update-kubeconfig --name <project_name> --region <region>
+kubectl apply -f assets/chip.yml
 ```
 
 ### More Detailed Examples
 
-1. Creating an encrypted EKS cluster:
-```hcl
-module "eks" {
-  source       = "./path/to/module"
-  project_name = "encrypted-eks"
-  k8s_version  = "1.24"
-  region       = "us-west-2"
-  # Add other required variables
-}
+1. Configuring Karpenter node pools:
+```yaml
+# Create a custom node pool
+kubectl apply -f files/karpenter/nodepool.yml
 ```
 
-2. Configuring cluster logging:
-```hcl
-# The cluster automatically enables logging for:
-# - API server
-# - Audit
-# - Authenticator
-# - Controller manager
-# - Scheduler
+2. Monitoring cluster metrics:
+```bash
+kubectl get --raw /metrics | grep node_cpu
 ```
 
 ### Troubleshooting
 
-1. OIDC Provider Issues
-- Error: "Error creating IAM OIDC Provider: InvalidInput: Thumbprint not valid for endpoint"
-- Solution: Verify the OIDC thumbprint list is correct and includes both the dynamic and static values
-
-2. Security Group Access
-- Issue: Nodes cannot join cluster
-- Check: Verify security group rules allow necessary communication:
+1. CoreDNS Issues
+- Symptom: CoreDNS pods stuck in pending state
+- Solution: The Lambda function will automatically fix CoreDNS configuration
+- Debug command:
 ```bash
-aws eks describe-cluster --name <cluster-name> --query cluster.resourcesVpcConfig.clusterSecurityGroupId
+kubectl logs -n kube-system -l k8s-app=kube-dns
 ```
 
-3. IAM Role Permissions
-- Issue: "User: is not authorized to perform: eks:CreateCluster"
-- Solution: Ensure proper IAM permissions are attached to the deploying user/role
+2. Node Scaling Issues
+- Check Karpenter logs:
+```bash
+kubectl logs -n karpenter -l app.kubernetes.io/name=karpenter
+```
+
+3. Authentication Issues
+- Verify aws-auth ConfigMap:
+```bash
+kubectl describe configmap aws-auth -n kube-system
+```
 
 ## Data Flow
-The infrastructure sets up a secure EKS cluster with encrypted storage and proper network isolation. Data flows through secure channels with proper IAM authentication and authorization.
+
+The infrastructure implements a comprehensive event-driven architecture for cluster scaling and management. Karpenter monitors resource requirements and manages node lifecycle through AWS APIs.
 
 ```ascii
-                                    ┌─────────────────┐
-                                    │   KMS Service   │
-                                    └────────┬────────┘
+                                     ┌──────────────┐
+                                     │   AWS EKS    │
+                                     │   Cluster    │
+                                     └──────┬───────┘
                                             │
-┌──────────────┐    ┌──────────────┐    ┌──┴───────────┐    ┌─────────────┐
-│   AWS IAM    │────│  EKS Cluster │────│ Worker Nodes │────│   Secrets   │
-└──────────────┘    └──────────────┘    └──────────────┘    └─────────────┘
-        │                  │                    │
-        │                  │                    │
-┌───────┴──────┐    ┌─────┴────────┐    ┌─────┴────────┐
-│ OIDC Provider│    │Security Groups│    │ Node Groups  │
-└──────────────┘    └──────────────┘    └──────────────┘
+                    ┌────────────────┬──────┴───────┬────────────────┐
+                    │                │              │                │
+              ┌─────┴─────┐   ┌─────┴─────┐  ┌─────┴─────┐    ┌─────┴─────┐
+              │  Karpenter │   │  CoreDNS  │  │  Metrics  │    │   Node    │
+              │  Controller│   │  Service  │  │  Server   │    │Termination│
+              └─────┬─────┘   └───────────┘  └───────────┘    └─────┬─────┘
+                    │                                                │
+              ┌─────┴─────┐                                   ┌─────┴─────┐
+              │ AWS SQS   │                                   │CloudWatch │
+              │  Queue    │                                   │  Events   │
+              └───────────┘                                   └───────────┘
 ```
 
 Key component interactions:
-1. IAM roles provide authentication and authorization for cluster and nodes
-2. KMS handles encryption of cluster secrets
-3. Security groups control network access between components
-4. OIDC provider enables external authentication integration
-5. Node groups run in private subnets with controlled access
-6. CoreDNS provides internal service discovery
-7. Cluster logs are sent to CloudWatch for monitoring
+1. Karpenter monitors pod scheduling events and resource utilization
+2. CloudWatch Events capture EC2 instance lifecycle events
+3. SQS queues buffer scaling events for reliable processing
+4. CoreDNS provides cluster DNS resolution with Fargate compatibility
+5. Node Termination Handler ensures graceful node shutdown
+6. Metrics Server collects cluster metrics for scaling decisions
+7. KMS provides encryption for cluster secrets and data
 
 ## Infrastructure
 
 ![Infrastructure diagram](./docs/infra.svg)
 
-### IAM Resources
-- EKS Cluster Role: Manages cluster operations
-- Node Role: Enables worker node operations with policies for:
-  - CNI networking
-  - Container registry access
-  - Systems Manager integration
-  - CloudWatch monitoring
+### Lambda Functions
+- `coredns-fix`: Patches CoreDNS deployment for Fargate compatibility
 
-### Security Resources
-- KMS Key: Encrypts cluster secrets
-- Security Group Rules:
+### IAM Roles
+- `eks-cluster-role`: Main cluster role with EKS permissions
+- `eks-nodes-role`: Node group IAM role
+- `fargate-role`: Fargate execution role
+- `karpenter-role`: Karpenter controller role
+
+### Security Groups
+- Cluster security group with rules for:
   - NodePorts (30000-32768)
   - CoreDNS TCP/UDP (53)
+  - Inter-node communication
 
-### Network Resources
-- VPC Integration with private subnets
-- Pod networking configuration
-- Cluster security group
-
-### EKS Resources
-- EKS Cluster with version control
-- OIDC provider for authentication
-- Enabled cluster logging
-- Zonal shift for high availability
+### Auto Scaling
+- Karpenter configured with custom node pools
+- SQS queue for scaling events
+- CloudWatch event rules for instance lifecycle management
