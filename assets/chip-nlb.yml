@@ -11,7 +11,7 @@ metadata:
   name: chip
   namespace: chip
 spec:
-  replicas: 20
+  replicas: 4
   selector:
     matchLabels:
       app: chip
@@ -94,11 +94,23 @@ metadata:
   labels:
     app.kubernetes.io/name: chip
     app.kubernetes.io/instance: chip 
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "TCP"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "8080"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "20" 
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: "5" 
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "3" 
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: "3" 
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip" 
+    service.beta.kubernetes.io/aws-load-balancer-subnets: "subnet-0c5b237f66bddf5c8,subnet-0dee65e5e391e8fc1,subnet-0ca7a232f3257490b" # Subnets específicas
+    service.beta.kubernetes.io/aws-load-balancer-attributes: "load_balancing.cross_zone.enabled=true"
 spec:
   ports:
   - name: web
     port: 8080
     protocol: TCP
+    targetPort: 8080
   selector:
     app: chip
-  type: ClusterIP
+  type: LoadBalancer
