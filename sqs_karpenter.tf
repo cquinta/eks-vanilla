@@ -1,15 +1,13 @@
-resource "aws_sqs_queue" "node_termination" {
-  name                       = format("%s-node-termination", var.project_name)
+resource "aws_sqs_queue" "karpenter" {
+  name                       = format("%s-karpenter", var.project_name)
   delay_seconds              = 0
   message_retention_seconds  = 86400
   receive_wait_time_seconds  = 10
   visibility_timeout_seconds = 60
 }
 
-
-
-resource "aws_sqs_queue_policy" "node_termination_handler" {
-  queue_url = aws_sqs_queue.node_termination.id
+resource "aws_sqs_queue_policy" "karpenter" {
+  queue_url = aws_sqs_queue.karpenter.id
   policy    = <<EOF
 {
   "Version": "2012-10-17",
@@ -21,7 +19,7 @@ resource "aws_sqs_queue_policy" "node_termination_handler" {
         "sqs:SendMessage"
       ],
       "Resource": [
-        "${aws_sqs_queue.node_termination.arn}"
+        "${aws_sqs_queue.karpenter.arn}"
       ]
     }
   ]
@@ -29,8 +27,7 @@ resource "aws_sqs_queue_policy" "node_termination_handler" {
 EOF
 }
 
-
-resource "aws_cloudwatch_event_rule" "node_termination_handler_instance_terminate" {
+resource "aws_cloudwatch_event_rule" "karpenter_instance_terminate" {
 
   name        = format("%s-instance-terminate", var.project_name)
   description = var.project_name
@@ -43,15 +40,15 @@ resource "aws_cloudwatch_event_rule" "node_termination_handler_instance_terminat
   })
 }
 
-resource "aws_cloudwatch_event_target" "node_termination_handler_instance_terminate" {
+resource "aws_cloudwatch_event_target" "karpenter_instance_terminate" {
 
-  rule      = aws_cloudwatch_event_rule.node_termination_handler_instance_terminate.name
+  rule      = aws_cloudwatch_event_rule.karpenter_instance_terminate.name
   target_id = "SendToSQS"
-  arn       = aws_sqs_queue.node_termination.arn
+  arn       = aws_sqs_queue.karpenter.arn
 }
 
 
-resource "aws_cloudwatch_event_rule" "node_termination_handler_scheduled_change" {
+resource "aws_cloudwatch_event_rule" "karpenter_scheduled_change" {
 
   name        = format("%s-scheduled-change", var.project_name)
   description = var.project_name
@@ -72,14 +69,14 @@ resource "aws_cloudwatch_event_rule" "node_termination_handler_scheduled_change"
   })
 }
 
-resource "aws_cloudwatch_event_target" "node_termination_handler_scheduled_change" {
+resource "aws_cloudwatch_event_target" "karpenter_scheduled_change" {
 
-  rule      = aws_cloudwatch_event_rule.node_termination_handler_scheduled_change.name
+  rule      = aws_cloudwatch_event_rule.karpenter_scheduled_change.name
   target_id = "SendToSQS"
-  arn       = aws_sqs_queue.node_termination.arn
+  arn       = aws_sqs_queue.karpenter.arn
 }
 
-resource "aws_cloudwatch_event_rule" "node_termination_handler_spot_termination" {
+resource "aws_cloudwatch_event_rule" "karpenter_spot_termination" {
 
   name        = format("%s-spot-termination", var.project_name)
   description = var.project_name
@@ -92,15 +89,15 @@ resource "aws_cloudwatch_event_rule" "node_termination_handler_spot_termination"
   })
 }
 
-resource "aws_cloudwatch_event_target" "node_termination_handler_spot_termination" {
+resource "aws_cloudwatch_event_target" "karpenter_spot_termination" {
 
-  rule      = aws_cloudwatch_event_rule.node_termination_handler_spot_termination.name
+  rule      = aws_cloudwatch_event_rule.karpenter_spot_termination.name
   target_id = "SendToSQS"
-  arn       = aws_sqs_queue.node_termination.arn
+  arn       = aws_sqs_queue.karpenter.arn
 }
 
 
-resource "aws_cloudwatch_event_rule" "node_termination_handler_rebalance" {
+resource "aws_cloudwatch_event_rule" "karpenter_rebalance" {
 
   name        = format("%s-rebalance", var.project_name)
   description = var.project_name
@@ -113,15 +110,15 @@ resource "aws_cloudwatch_event_rule" "node_termination_handler_rebalance" {
   })
 }
 
-resource "aws_cloudwatch_event_target" "node_termination_handler_rebalance" {
+resource "aws_cloudwatch_event_target" "karpenter_rebalance" {
 
-  rule      = aws_cloudwatch_event_rule.node_termination_handler_rebalance.name
+  rule      = aws_cloudwatch_event_rule.karpenter_rebalance.name
   target_id = "SendToSQS"
-  arn       = aws_sqs_queue.node_termination.arn
+  arn       = aws_sqs_queue.karpenter.arn
 }
 
 
-resource "aws_cloudwatch_event_rule" "node_termination_handler_state_change" {
+resource "aws_cloudwatch_event_rule" "karpenter_state_change" {
 
   name        = format("%s-state-change", var.project_name)
   description = var.project_name
@@ -134,9 +131,9 @@ resource "aws_cloudwatch_event_rule" "node_termination_handler_state_change" {
   })
 }
 
-resource "aws_cloudwatch_event_target" "node_termination_handler_state_change" {
+resource "aws_cloudwatch_event_target" "karpenter_state_change" {
 
-  rule      = aws_cloudwatch_event_rule.node_termination_handler_state_change.name
+  rule      = aws_cloudwatch_event_rule.karpenter_state_change.name
   target_id = "SendToSQS"
-  arn       = aws_sqs_queue.node_termination.arn
+  arn       = aws_sqs_queue.karpenter.arn
 }

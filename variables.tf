@@ -42,14 +42,7 @@ variable "auto_scale_options" {
   description = "Configurações de Autoscaling do Cluster"
 }
 
-variable "auto_scale_options_main" {
-  type = object({
-    min     = number
-    max     = number
-    desired = number
-  })
-  description = "Configurações de Autoscaling do Cluster para o cluster principal"
-}
+
 
 variable "nodes_instance_sizes" {
   type        = list(string)
@@ -78,4 +71,17 @@ variable "custom_ami" {
   type        = string
   description = "AMI ID customizada para os nodes"
   default     = "ami-03571be2203184664"
+}
+
+variable "karpenter_capacity" {
+  type = list(object({
+    name               = string
+    workload           = string
+    ami_family         = string
+    ami_ssm            = string
+    instance_family    = list(string)
+    instance_sizes     = list(string)
+    capacity_type      = list(string)
+    availability_zones = list(string)
+  }))
 }
