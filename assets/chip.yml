@@ -11,7 +11,7 @@ metadata:
   name: chip
   namespace: chip
 spec:
-  replicas: 1
+  replicas: 20
   selector:
     matchLabels:
       app: chip
@@ -22,6 +22,30 @@ spec:
         name: chip
         version: v1
     spec:
+      
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: "topology.kubernetes.io/zone"
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app: chip
+
+      - maxSkew: 1
+        topologyKey: "node.kubernetes.io/instance-type"
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app: chip
+      
+      - maxSkew: 1
+        topologyKey: "karpenter.sh/capacity-type"
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app: chip
+
+
       containers:
       - name: chip
         image: fidelissauro/chip:v1
