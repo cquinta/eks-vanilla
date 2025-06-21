@@ -11,7 +11,7 @@ metadata:
   name: chip
   namespace: chip
 spec:
-  replicas: 3
+  replicas: 4
   selector:
     matchLabels:
       app: chip
@@ -27,13 +27,6 @@ spec:
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: "topology.kubernetes.io/zone"
-          whenUnsatisfiable: ScheduleAnyway
-          labelSelector:
-            matchLabels:
-              app: chip
-
-        - maxSkew: 1
-          topologyKey: "node.kubernetes.io/instance-type"
           whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
@@ -83,45 +76,27 @@ apiVersion: v1
 kind: Service
 metadata:
   name: chip
-  namespace: chip
+  namespace: chip 
   labels:
     app.kubernetes.io/name: chip
-    app.kubernetes.io/instance: chip
+    app.kubernetes.io/instance: chip 
 spec:
   ports:
   - name: web
     port: 8080
     protocol: TCP
-    targetPort: 8080
   selector:
     app: chip
-  type: LoadBalancer
---- 
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+  type: NodePort
+---
+apiVersion: elbv2.k8s.aws/v1beta1
+kind: TargetGroupBinding
 metadata:
-  name: chip-ingress
+  name: chip
   namespace: chip
-  annotations:
-    alb.ingress.kubernetes.io/scheme: "internet-facing" # Expor o ALB publicamente (use "internal" para privado)
-    alb.ingress.kubernetes.io/subnets:  "subnet-0c5b237f66bddf5c8,subnet-0dee65e5e391e8fc1,subnet-0ca7a232f3257490b" # Subnets específicas
-    alb.ingress.kubernetes.io/target-type: "ip" 
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]' 
-    alb.ingress.kubernetes.io/healthcheck-path: "/liveness" 
-    alb.ingress.kubernetes.io/healthcheck-port: "traffic-port" 
-    alb.ingress.kubernetes.io/healthcheck-protocol: "HTTP" 
-  labels:
-    app.kubernetes.io/name: chip
 spec:
-  ingressClassName: alb
-  rules:
-    - host: chip.cquinta.com # Substitua pelo seu domínio
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: chip
-                port:
-                  number: 8080
+  serviceRef:
+    name: chip
+    port: web
+  targetGroupARN: "arn:aws:elasticloadbalancing:us-east-1:707257249187:targetgroup/linuxtips-cluster-http/5c09b3c420dda076"
+  targetType: instance

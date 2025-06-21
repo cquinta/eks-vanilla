@@ -85,3 +85,14 @@ variable "karpenter_capacity" {
     availability_zones = list(string)
   }))
 }
+
+variable "dns_name" {
+  type        = string
+  description = "Nome do DNS"
+  default = "*.cquinta.com"
+}
+
+variable "route53_hosted_zone" {
+  type = string
+  default = "Z040960237M3RMXIT1WRJ"
+}

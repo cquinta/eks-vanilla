@@ -103,11 +103,14 @@ metadata:
   name: chip-ingress
   namespace: chip
   annotations:
-    alb.ingress.kubernetes.io/scheme: "internet-facing" # Expor o ALB publicamente (use "internal" para privado)
-    alb.ingress.kubernetes.io/subnets:  "subnet-0c5b237f66bddf5c8,subnet-0dee65e5e391e8fc1,subnet-0ca7a232f3257490b" # Subnets específicas
+    alb.ingress.kubernetes.io/scheme: "internet-facing" 
+    alb.ingress.kubernetes.io/subnets:  "subnet-04649e8bde2e66f10,subnet-0b8081c8d8d2d317a,subnet-0458ef2407c78e0c2" 
     alb.ingress.kubernetes.io/target-type: "ip" 
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]' 
-    alb.ingress.kubernetes.io/healthcheck-path: "/liveness" 
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]' 
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:707257249187:certificate/f96147ec-0b18-4e00-b13d-5a166eae6324" 
+    alb.ingress.kubernetes.io/ssl-policy: "ELBSecurityPolicy-2016-08" 
+    alb.ingress.kubernetes.io/healthcheck-path: "/liveness"
     alb.ingress.kubernetes.io/healthcheck-port: "traffic-port" 
     alb.ingress.kubernetes.io/healthcheck-protocol: "HTTP" 
   labels:
@@ -115,7 +118,7 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - host: chip.cquinta.com # Substitua pelo seu domínio
+    - host: chip.cquinta.com 
       http:
         paths:
           - path: /
