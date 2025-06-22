@@ -67,62 +67,8 @@ variable "addon_kubeproxy_version" {
   description = "Versão do Addon do Kube-Proxy"
 }
 
-variable "custom_ami" {
+variable "addon_pod_identity_version" {
   type        = string
-  description = "AMI ID customizada para os nodes"
-  default     = "ami-03571be2203184664"
-}
-
-variable "karpenter_capacity" {
-  type = list(object({
-    name               = string
-    workload           = string
-    ami_family         = string
-    ami_ssm            = string
-    instance_family    = list(string)
-    instance_sizes     = list(string)
-    capacity_type      = list(string)
-    availability_zones = list(string)
-  }))
-}
-
-variable "dns_name" {
-  type        = string
-  description = "Nome do DNS"
-  default     = "*.cquinta.com"
-}
-
-variable "route53_hosted_zone" {
-  type    = string
-  default = "Z040960237M3RMXIT1WRJ"
-}
-
-variable "nginx_min_replicas" {
-  type    = string
-  default = "3"
-}
-
-variable "nginx_max_replicas" {
-  type    = string
-  default = "60"
-}
-
-variable "nginx_requests_cpu" {
-  type    = string
-  default = "250m"
-}
-
-variable "nginx_requests_memory" {
-  type    = string
-  default = "512Mi"
-}
-
-variable "nginx_limits_cpu" {
-  type    = string
-  default = "500m"
-}
-
-variable "nginx_limits_memory" {
-  type    = string
-  default = "1024Mi"
+  default     = "v1.3.4-eksbuild.1"
+  description = "Versão do Addon do Pod Identity"
 }

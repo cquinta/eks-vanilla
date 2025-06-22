@@ -21,7 +21,6 @@ resource "helm_release" "kube_state_metrics" {
   }
 
   depends_on = [
-    aws_eks_cluster.main,
-    aws_eks_fargate_profile.kube_system
+    aws_eks_cluster.main
   ]
 }
