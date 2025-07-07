@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: chip
+---
+apiVersion: external-secrets.io/v1
+kind: SecretStore
+metadata:
+  name: chip-secret-store-ssm
+  namespace: chip
+spec:
+  provider:
+    aws:
+      service: ParameterStore
+      region: us-east-1
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: chip-external-parameter
+  namespace: chip
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: chip-secret-store-ssm
+    kind: SecretStore
+  target:
+    # Nome do Secret que Será criado no Kubernetes para inserir os valores
+    name: chip-aws-parameters
+    creationPolicy: Owner
+  data:
+    # Chave do Secret do Kubernetes onde será armazenado o valor do Secret do Secrets Manager
+  - secretKey: PARAMETRO_EXEMPLO
+    remoteRef:
+      # O nome do parameter store
+      key: "/Parameters/chip-teste-parameter"
+      # Property Vazia - Irá armazenado com plaintext
+      property: ""
+---
