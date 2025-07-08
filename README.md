@@ -1,28 +1,27 @@
-# AWS EKS Cluster with Karpenter Auto-scaling Infrastructure
+# AWS EKS Infrastructure as Code with Terraform
 
-This project provides an Infrastructure as Code (IaC) solution for deploying and managing a production-ready Amazon EKS cluster with Karpenter-based auto-scaling capabilities. It combines advanced node management, security features, and monitoring capabilities to deliver a robust Kubernetes infrastructure on AWS.
+This project provides a production-ready Infrastructure as Code (IaC) solution for deploying and managing Amazon Elastic Kubernetes Service (EKS) clusters using Terraform. It implements AWS best practices for security, scalability, and maintainability.
 
-The infrastructure is defined using Terraform and includes comprehensive setup of EKS cluster components, IAM roles, security groups, monitoring tools, and auto-scaling configurations. It features Karpenter for intelligent node provisioning, CoreDNS for service discovery, and various AWS services integration for enhanced cluster management and monitoring.
+The infrastructure setup includes a complete EKS cluster with node pools, IAM roles, security groups, monitoring capabilities, and essential Kubernetes add-ons. It features automated node scaling, encrypted storage using KMS, comprehensive logging, and integration with AWS services like CloudWatch and Systems Manager.
 
 ## Repository Structure
 ```
 .
-├── access_entries.tf          # EKS cluster access configuration
-├── addons.tf                 # EKS add-ons configuration (CNI, CoreDNS, Kube-proxy)
-├── aws_auth.tf              # AWS authentication configuration for EKS
-├── backend.tf               # Terraform S3 backend configuration
-├── eks.tf                  # Main EKS cluster configuration
-├── fargate.tf             # Fargate profile configuration
-├── helm_karpenter.tf     # Karpenter Helm chart deployment
-├── iam_*.tf             # Various IAM role configurations
-├── kms.tf              # KMS key configuration for cluster encryption
-├── lambda/            # Lambda functions for cluster management
-│   └── coredns/      # CoreDNS configuration fix
-├── files/            # Configuration files for various components
-│   └── karpenter/   # Karpenter node pool and EC2 configurations
-├── sg.tf           # Security group configurations
-├── sqs_karpenter.tf # SQS queue for Karpenter events
-└── variables.tf    # Terraform variables definition
+├── assets/                    # Kubernetes manifests for applications
+│   ├── chip-ingress.yaml     # Ingress configuration for the chip service
+│   ├── chip-system.yaml      # System-level configuration for the chip service
+│   └── chip.yaml             # Core deployment configuration for the chip service
+├── docs/                      # Documentation files
+│   ├── infra.dot            # Infrastructure diagram source
+│   └── infra.svg            # Visual infrastructure diagram
+├── terraform/                 # Terraform configuration files
+│   ├── backend.tf            # Terraform state configuration
+│   ├── data.tf              # Data source definitions
+│   ├── eks.tf               # EKS cluster configuration
+│   ├── iam_*.tf             # IAM roles and policies
+│   ├── kms.tf               # KMS key configuration
+│   ├── providers.tf         # Provider configurations
+│   └── variables.tf         # Input variables definition
 ```
 
 ## Usage Instructions
@@ -31,47 +30,43 @@ The infrastructure is defined using Terraform and includes comprehensive setup o
 - Terraform >= 1.0.0
 - kubectl
 - helm >= 3.0.0
-- An AWS S3 bucket for Terraform state
-- AWS IAM permissions to create EKS clusters and related resources
+- AWS account with permissions to create:
+  - EKS clusters
+  - IAM roles and policies
+  - KMS keys
+  - Security Groups
+  - CloudWatch Log Groups
 
 ### Installation
 
-1. Configure AWS credentials:
+1. Clone the repository:
 ```bash
-aws configure
+git clone <repository-url>
+cd <repository-name>
 ```
 
 2. Initialize Terraform:
 ```bash
-terraform init \
-  -backend-config="bucket=your-terraform-state-bucket" \
-  -backend-config="key=eks/terraform.tfstate" \
-  -backend-config="region=your-aws-region"
+terraform init
 ```
 
-3. Create a terraform.tfvars file:
-```hcl
-project_name = "your-project-name"
-region = "your-aws-region"
-k8s_version = "1.28"
-auto_scale_options = {
-  min     = 1
-  max     = 10
-  desired = 2
-}
-```
-
-4. Apply the configuration:
+3. Review and customize variables:
 ```bash
-terraform plan
-terraform apply
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your desired values
+```
+
+4. Deploy the infrastructure:
+```bash
+terraform plan -out=tfplan
+terraform apply tfplan
 ```
 
 ### Quick Start
 
-1. Configure kubectl for your new cluster:
+1. Configure kubectl to use the new cluster:
 ```bash
-aws eks update-kubeconfig --name your-project-name --region your-aws-region
+aws eks update-kubeconfig --name <project_name> --region <region>
 ```
 
 2. Verify cluster access:
@@ -79,98 +74,107 @@ aws eks update-kubeconfig --name your-project-name --region your-aws-region
 kubectl get nodes
 ```
 
-3. Deploy a sample application:
+3. Deploy the sample application:
 ```bash
-kubectl apply -f assets/chip.yml
+kubectl apply -f assets/chip.yaml
 ```
 
 ### More Detailed Examples
 
-1. Configuring Karpenter node pools:
-```yaml
-# Create a custom node pool
-kubectl apply -f files/karpenter/nodepool.yml
+1. Deploying with custom node pools:
+```hcl
+module "eks" {
+  source = "./modules/eks"
+  
+  project_name = "my-cluster"
+  node_pools = {
+    system = {
+      min_size = 2
+      max_size = 4
+      instance_types = ["t3.medium"]
+    }
+    application = {
+      min_size = 3
+      max_size = 10
+      instance_types = ["t3.large"]
+    }
+  }
+}
 ```
 
-2. Monitoring cluster metrics:
+2. Enabling monitoring:
 ```bash
-kubectl get --raw /metrics | grep node_cpu
+kubectl apply -f assets/monitoring/
 ```
 
 ### Troubleshooting
 
-1. CoreDNS Issues
-- Symptom: CoreDNS pods stuck in pending state
-- Solution: The Lambda function will automatically fix CoreDNS configuration
-- Debug command:
-```bash
-kubectl logs -n kube-system -l k8s-app=kube-dns
-```
+1. Cluster Creation Issues
+- Error: "Cannot create cluster due to insufficient permissions"
+  ```bash
+  aws sts get-caller-identity
+  # Verify IAM permissions match prerequisites
+  ```
 
-2. Node Scaling Issues
-- Check Karpenter logs:
-```bash
-kubectl logs -n karpenter -l app.kubernetes.io/name=karpenter
-```
-
-3. Authentication Issues
-- Verify aws-auth ConfigMap:
-```bash
-kubectl describe configmap aws-auth -n kube-system
-```
+2. Node Registration Issues
+- Check node status:
+  ```bash
+  kubectl get nodes
+  kubectl describe node <node-name>
+  ```
+- Verify IAM role attachments:
+  ```bash
+  aws iam list-attached-role-policies --role-name <node-role-name>
+  ```
 
 ## Data Flow
-
-The infrastructure implements a comprehensive event-driven architecture for cluster scaling and management. Karpenter monitors resource requirements and manages node lifecycle through AWS APIs.
+The infrastructure implements a secure and scalable data flow for Kubernetes workloads.
 
 ```ascii
-                                     ┌──────────────┐
-                                     │   AWS EKS    │
-                                     │   Cluster    │
-                                     └──────┬───────┘
+                                                    ┌──────────────┐
+                                                    │   KMS Key    │
+                                                    └──────┬───────┘
+                                                          │
+┌──────────┐     ┌─────────────┐     ┌──────────────┐    │    ┌──────────────┐
+│  Client  │────▶│ ALB Ingress │────▶│ EKS Cluster  │◀───┴───▶│ Node Pools   │
+└──────────┘     └─────────────┘     └──────────────┘         └──────────────┘
                                             │
-                    ┌────────────────┬──────┴───────┬────────────────┐
-                    │                │              │                │
-              ┌─────┴─────┐   ┌─────┴─────┐  ┌─────┴─────┐    ┌─────┴─────┐
-              │  Karpenter │   │  CoreDNS  │  │  Metrics  │    │   Node    │
-              │  Controller│   │  Service  │  │  Server   │    │Termination│
-              └─────┬─────┘   └───────────┘  └───────────┘    └─────┬─────┘
-                    │                                                │
-              ┌─────┴─────┐                                   ┌─────┴─────┐
-              │ AWS SQS   │                                   │CloudWatch │
-              │  Queue    │                                   │  Events   │
-              └───────────┘                                   └───────────┘
+                                     ┌──────┴───────┐
+                                     │ CloudWatch   │
+                                     │    Logs      │
+                                     └──────────────┘
 ```
 
 Key component interactions:
-1. Karpenter monitors pod scheduling events and resource utilization
-2. CloudWatch Events capture EC2 instance lifecycle events
-3. SQS queues buffer scaling events for reliable processing
-4. CoreDNS provides cluster DNS resolution with Fargate compatibility
-5. Node Termination Handler ensures graceful node shutdown
-6. Metrics Server collects cluster metrics for scaling decisions
-7. KMS provides encryption for cluster secrets and data
+1. External traffic is routed through ALB Ingress Controller
+2. EKS control plane manages workload distribution
+3. Node pools auto-scale based on demand
+4. All secrets are encrypted using KMS
+5. Cluster operations are logged to CloudWatch
 
 ## Infrastructure
 
-![Infrastructure diagram](./docs/infra.svg)
+### IAM Resources
+- EKS Cluster Role (`eks_cluster_role`)
+  - Permissions: Cluster management, load balancing, networking
+- Node Role (`eks_nodes_role`)
+  - Permissions: Container registry access, CloudWatch logging
 
-### Lambda Functions
-- `coredns-fix`: Patches CoreDNS deployment for Fargate compatibility
+### Compute Resources
+- EKS Cluster
+  - Version: Specified in variables
+  - Logging: API, audit, authenticator, controllerManager, scheduler
+  - Encryption: KMS-based for secrets
 
-### IAM Roles
-- `eks-cluster-role`: Main cluster role with EKS permissions
-- `eks-nodes-role`: Node group IAM role
-- `fargate-role`: Fargate execution role
-- `karpenter-role`: Karpenter controller role
-
-### Security Groups
-- Cluster security group with rules for:
+### Networking
+- Security Groups
   - NodePorts (30000-32768)
-  - CoreDNS TCP/UDP (53)
-  - Inter-node communication
+  - CoreDNS (TCP/UDP 53)
+- VPC Integration
+  - Private subnets for nodes
+  - Public subnets for load balancers
 
-### Auto Scaling
-- Karpenter configured with custom node pools
-- SQS queue for scaling events
-- CloudWatch event rules for instance lifecycle management
+### Monitoring
+- Kube State Metrics
+- Metrics Server
+- CloudWatch Integration

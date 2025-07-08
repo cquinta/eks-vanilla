@@ -44,6 +44,8 @@ digraph INFRA {
 (AWS::Events::Rule)", shape =rectangle, fillcolor = "#CCE0AC" ];
   "karpenter-state-change-event-target" [ label = "karpenter-state-change-event-target
 (AWS::Events::Target)", shape =rectangle, fillcolor = "#CCE0AC" ];
+  "kube-state-metrics" [ label = "kube-state-metrics
+(helm_release)", shape =rectangle ];
   "eks-cluster" -> "eks-cluster-role";
   "eks-cluster" -> "kms-key";
   "nodes-instance-profile" -> "eks-nodes-role";
@@ -63,4 +65,5 @@ digraph INFRA {
   "karpenter-rebalance-event-target" -> "karpenter-sqs-queue";
   "karpenter-state-change-event-target" -> "karpenter-state-change-event-rule";
   "karpenter-state-change-event-target" -> "karpenter-sqs-queue";
+  "kube-state-metrics" -> "eks-cluster";
 }
