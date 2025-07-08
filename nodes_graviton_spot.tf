@@ -1,5 +1,5 @@
 resource "aws_eks_node_group" "graviton_spot" {
-
+  count = var.create_graviton ? 1 : 0
   cluster_name    = aws_eks_cluster.main.id
   node_group_name = format("%s-graviton-spot", aws_eks_cluster.main.id)
 

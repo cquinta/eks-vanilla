@@ -42,14 +42,6 @@ variable "auto_scale_options" {
   description = "Configurações de Autoscaling do Cluster"
 }
 
-variable "auto_scale_options_main" {
-  type = object({
-    min     = number
-    max     = number
-    desired = number
-  })
-  description = "Configurações de Autoscaling do Cluster para o cluster principal"
-}
 
 variable "nodes_instance_sizes" {
   type        = list(string)
@@ -84,4 +76,21 @@ variable "addon_pod_identity_version" {
   type        = string
   default     = "v1.3.4-eksbuild.1"
   description = "Versão do Addon do Pod Identity"
+}
+
+variable "create_custom_nodes" {
+  type = bool
+  default = false
+}
+variable "create_bootlerocket" {
+  type = bool
+  default = false
+}
+variable "create_graviton" {
+  type = bool
+  default = false
+}
+variable "create_spot" {
+  type = bool
+  default = false
 }

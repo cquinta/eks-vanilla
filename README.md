@@ -1,34 +1,41 @@
-# AWS EKS Cluster Infrastructure as Code with Terraform
+# AWS EKS Infrastructure as Code with Terraform
 
-This project provides a comprehensive Infrastructure as Code (IaC) solution for deploying and managing an Amazon Elastic Kubernetes Service (EKS) cluster using Terraform. It implements secure, production-ready EKS infrastructure with encrypted storage, OIDC authentication, and proper IAM roles and security configurations.
+This project provides a tempalte for Infrastructure as Code (IaC) solution for deploying and managing Amazon Elastic Kubernetes Service (EKS) clusters in automode, using Terraform. It implements AWS best practices for security, scalability, and maintainability.
 
-The infrastructure includes a fully configured EKS cluster with node management, security groups, KMS encryption, and OIDC integration. It supports features such as cluster logging, zonal shift for high availability, and proper network segmentation using VPC subnets. The configuration follows AWS best practices for running containerized workloads in a production environment.
+The infrastructure setup includes a complete EKS cluster with node pools, IAM roles, security groups, and essential Kubernetes add-ons. It features automated node scaling, encrypted storage using KMS, comprehensive logging, and integration with AWS services like CloudWatch and Systems Manager.
 
 ## Repository Structure
 ```
 .
-├── backend.tf          # S3 backend configuration for Terraform state
-├── data.tf            # AWS SSM parameter store data source definitions
-├── eks.tf             # EKS cluster configuration and settings
-├── iam_cluster.tf     # IAM roles and policies for the EKS cluster
-├── iam_nodes.tf       # IAM roles and policies for EKS worker nodes
-├── kms.tf             # KMS key configuration for cluster encryption
-├── oidc.tf           # OIDC provider setup for cluster authentication
-├── providers.tf       # AWS provider configuration
-├── sg.tf             # Security group rules for cluster networking
-└── variables.tf       # Input variables for the Terraform configuration
+├── assets/                    # Kubernetes manifests for applications
+│   ├── chip-ingress.yaml     # Ingress configuration for the chip service
+│   ├── chip-system.yaml      # System-level configuration for the chip service
+│   └── chip.yaml             # Core deployment configuration for the chip service
+├── docs/                      # Documentation files
+│   ├── infra.dot            # Infrastructure diagram source
+│   └── infra.svg            # Visual infrastructure diagram
+├── terraform/                 # Terraform configuration files
+│   ├── backend.tf            # Terraform state configuration
+│   ├── data.tf              # Data source definitions
+│   ├── eks.tf               # EKS cluster configuration
+│   ├── iam_*.tf             # IAM roles and policies
+│   ├── kms.tf               # KMS key configuration
+│   ├── providers.tf         # Provider configurations
+│   └── variables.tf         # Input variables definition
 ```
 
 ## Usage Instructions
 ### Prerequisites
 - AWS CLI configured with appropriate credentials
-- Terraform >= 0.12.x
+- Terraform >= 1.0.0
+- kubectl
+- helm >= 3.0.0
 - AWS account with permissions to create:
   - EKS clusters
   - IAM roles and policies
   - KMS keys
-  - Security groups
-  - OIDC providers
+  - Security Groups
+  - CloudWatch Log Groups
 
 ### Installation
 
@@ -43,126 +50,178 @@ cd <repository-name>
 terraform init
 ```
 
-3. Configure required variables in a `terraform.tfvars` file:
-```hcl
-project_name        = "your-project-name"
-region             = "your-aws-region"
-ssm_vpc            = "ssm-parameter-for-vpc"
-ssm_public_subnets = ["ssm-parameter-for-public-subnet-1", "ssm-parameter-for-public-subnet-2"]
-ssm_private_subnets = ["ssm-parameter-for-private-subnet-1", "ssm-parameter-for-private-subnet-2"]
-ssm_pods_subnets    = ["ssm-parameter-for-pod-subnet-1", "ssm-parameter-for-pod-subnet-2"]
-k8s_version        = "1.24"
+3. Review and customize variables:
+```bash
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your desired values
+```
+
+4. Deploy the infrastructure:
+```bash
+terraform plan -out=tfplan
+terraform apply tfplan
 ```
 
 ### Quick Start
 
-1. Review the planned changes:
-```bash
-terraform plan
-```
-
-2. Apply the configuration:
-```bash
-terraform apply
-```
-
-3. After successful application, retrieve the cluster configuration:
+1. Configure kubectl to use the new cluster:
 ```bash
 aws eks update-kubeconfig --name <project_name> --region <region>
 ```
 
+2. Verify cluster access:
+```bash
+kubectl get nodes
+```
+
+3. Deploy the sample application:
+```bash
+kubectl apply -f assets/chip.yaml
+```
+
 ### More Detailed Examples
 
-1. Creating an encrypted EKS cluster:
+1. Deploying with custom node pools:
 ```hcl
 module "eks" {
-  source       = "./path/to/module"
-  project_name = "encrypted-eks"
-  k8s_version  = "1.24"
-  region       = "us-west-2"
-  # Add other required variables
+  source = "./modules/eks"
+  
+  project_name = "my-cluster"
+  node_pools = {
+    system = {
+      min_size = 2
+      max_size = 4
+      instance_types = ["t3.medium"]
+    }
+    application = {
+      min_size = 3
+      max_size = 10
+      instance_types = ["t3.large"]
+    }
+  }
 }
 ```
 
-2. Configuring cluster logging:
-```hcl
-# The cluster automatically enables logging for:
-# - API server
-# - Audit
-# - Authenticator
-# - Controller manager
-# - Scheduler
+2. Enabling monitoring:
+```bash
+kubectl apply -f assets/monitoring/
 ```
 
 ### Troubleshooting
 
-1. OIDC Provider Issues
-- Error: "Error creating IAM OIDC Provider: InvalidInput: Thumbprint not valid for endpoint"
-- Solution: Verify the OIDC thumbprint list is correct and includes both the dynamic and static values
+1. Cluster Creation Issues
+- Error: "Cannot create cluster due to insufficient permissions"
+  ```bash
+  aws sts get-caller-identity
+  # Verify IAM permissions match prerequisites
+  ```
 
-2. Security Group Access
-- Issue: Nodes cannot join cluster
-- Check: Verify security group rules allow necessary communication:
-```bash
-aws eks describe-cluster --name <cluster-name> --query cluster.resourcesVpcConfig.clusterSecurityGroupId
-```
-
-3. IAM Role Permissions
-- Issue: "User: is not authorized to perform: eks:CreateCluster"
-- Solution: Ensure proper IAM permissions are attached to the deploying user/role
+2. Node Registration Issues
+- Check node status:
+  ```bash
+  kubectl get nodes
+  kubectl describe node <node-name>
+  ```
+- Verify IAM role attachments:
+  ```bash
+  aws iam list-attached-role-policies --role-name <node-role-name>
+  ```
 
 ## Data Flow
-The infrastructure sets up a secure EKS cluster with encrypted storage and proper network isolation. Data flows through secure channels with proper IAM authentication and authorization.
+The infrastructure implements a secure and scalable data flow for Kubernetes workloads.
 
 ```ascii
-                                    ┌─────────────────┐
-                                    │   KMS Service   │
-                                    └────────┬────────┘
+                                                    ┌──────────────┐
+                                                    │   KMS Key    │
+                                                    └──────┬───────┘
+                                                          │
+┌──────────┐     ┌─────────────┐     ┌──────────────┐    │    ┌──────────────┐
+│  Client  │────▶│ ALB Ingress │────▶│ EKS Cluster  │◀───┴───▶│ Node Pools   │
+└──────────┘     └─────────────┘     └──────────────┘         └──────────────┘
                                             │
-┌──────────────┐    ┌──────────────┐    ┌──┴───────────┐    ┌─────────────┐
-│   AWS IAM    │────│  EKS Cluster │────│ Worker Nodes │────│   Secrets   │
-└──────────────┘    └──────────────┘    └──────────────┘    └─────────────┘
-        │                  │                    │
-        │                  │                    │
-┌───────┴──────┐    ┌─────┴────────┐    ┌─────┴────────┐
-│ OIDC Provider│    │Security Groups│    │ Node Groups  │
-└──────────────┘    └──────────────┘    └──────────────┘
+                                     ┌──────┴───────┐
+                                     │ CloudWatch   │
+                                     │    Logs      │
+                                     └──────────────┘
 ```
 
 Key component interactions:
-1. IAM roles provide authentication and authorization for cluster and nodes
-2. KMS handles encryption of cluster secrets
-3. Security groups control network access between components
-4. OIDC provider enables external authentication integration
-5. Node groups run in private subnets with controlled access
-6. CoreDNS provides internal service discovery
-7. Cluster logs are sent to CloudWatch for monitoring
+1. External traffic is routed through ALB Ingress Controller
+2. EKS control plane manages workload distribution
+3. Node pools auto-scale based on demand
+4. All secrets are encrypted using KMS
+5. Cluster operations are logged to CloudWatch
 
 ## Infrastructure
 
-![Infrastructure diagram](./docs/infra.svg)
-
 ### IAM Resources
-- EKS Cluster Role: Manages cluster operations
-- Node Role: Enables worker node operations with policies for:
-  - CNI networking
+- EKS Cluster Role (`eks_cluster_role`)
+  - Permissions: Cluster management, load balancing, networking
+- Node Role (`eks_nodes_role`)
+  - Permissions: Container registry access, CloudWatch logging
+
+### Node Groups
+The infrastructure supports multiple types of node groups to accommodate different workload requirements:
+
+1. Standard Node Group
+   - Uses on-demand instances
+   - Supports x86_64 architecture
+   - Amazon Linux 2 operating system
+   - Auto-scaling configuration with min/max/desired nodes
+   - Standard EBS volumes
+
+2. Custom Node Group with Launch Template
+   - SPOT instances for cost optimization
+   - Customized EBS configuration (50GB gp3 volumes)
+   - Custom user data script for node initialization
+   - Amazon Linux operating system
+   - EBS-optimized instances
+
+3. Bottlerocket Node Group
+   - SPOT instances
+   - Bottlerocket OS (optimized for containers)
+   - x86_64 architecture
+   - Enhanced security with minimalist OS
+   - Auto-scaling capabilities
+
+4. Graviton Node Group
+   - ARM64 architecture using AWS Graviton processors
+   - SPOT instances
+   - Supports t4g.large and c7g.large instance types
+   - AL2023 ARM64 AMI
+   - Cost-optimized for ARM workloads
+
+5. Spot Node Group
+   - Pure SPOT instance configuration
+   - Flexible instance type selection
+   - Cost-optimized for non-critical workloads
+   - Auto-scaling with spot instance handling
+
+Common features across all node groups:
+- IAM role with policies for:
+  - Container networking (CNI)
   - Container registry access
   - Systems Manager integration
   - CloudWatch monitoring
+- Automatic scaling configuration
+- Kubernetes labels for capacity management
+- Integration with cluster autoscaler
 
-### Security Resources
-- KMS Key: Encrypts cluster secrets
-- Security Group Rules:
+### Compute Resources
+- EKS Cluster
+  - Version: Specified in variables
+  - Logging: API, audit, authenticator, controllerManager, scheduler
+  - Encryption: KMS-based for secrets
+
+### Networking
+- Security Groups
   - NodePorts (30000-32768)
-  - CoreDNS TCP/UDP (53)
+  - CoreDNS (TCP/UDP 53)
+- VPC Integration
+  - Private subnets for nodes
+  - Public subnets for load balancers
 
-### Network Resources
-- VPC Integration with private subnets
-- Pod networking configuration
-- Cluster security group
-
-### EKS Resources
-- EKS Cluster with version control
-- OIDC provider for authentication
-- Enabled cluster logging
-- Zonal shift for high availability
+### Monitoring
+- Kube State Metrics
+- Metrics Server
+- CloudWatch Integration

@@ -1,4 +1,5 @@
 resource "aws_eks_node_group" "bottlerocket" {
+  count = var.create_bootlerocket ? 1 : 0
 
   cluster_name    = aws_eks_cluster.main.id
   node_group_name = format("%s-bottlerocket-spot", aws_eks_cluster.main.id)

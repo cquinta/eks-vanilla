@@ -10,9 +10,9 @@ resource "aws_eks_node_group" "main" {
   subnet_ids = data.aws_ssm_parameter.pod_subnets[*].value
 
   scaling_config {
-    desired_size = lookup(var.auto_scale_options_main, "desired")
-    max_size     = lookup(var.auto_scale_options_main, "max")
-    min_size     = lookup(var.auto_scale_options_main, "min")
+    desired_size = lookup(var.auto_scale_options, "desired")
+    max_size     = lookup(var.auto_scale_options, "max")
+    min_size     = lookup(var.auto_scale_options, "min")
   }
 
   capacity_type = "ON_DEMAND"

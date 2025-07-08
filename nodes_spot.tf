@@ -1,5 +1,7 @@
 resource "aws_eks_node_group" "spot" {
 
+  count = var.create_spot ? 1 : 0
+
   cluster_name    = aws_eks_cluster.main.id
   node_group_name = format("%s-spot", aws_eks_cluster.main.id)
 

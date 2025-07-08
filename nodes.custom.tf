@@ -1,4 +1,5 @@
 resource "aws_launch_template" "custom" {
+ 
 
   name = var.project_name
 
@@ -33,6 +34,7 @@ resource "aws_launch_template" "custom" {
 }
 
 resource "aws_eks_node_group" "custom" {
+  count = var.create_custom_nodes ? 1 : 0
 
   cluster_name    = aws_eks_cluster.main.id
   node_group_name = format("%s-custom", aws_eks_cluster.main.id)
