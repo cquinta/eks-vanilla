@@ -170,6 +170,15 @@ The infrastructure supports multiple types of node groups to accommodate differe
    - Auto-scaling configuration with min/max/desired nodes
    - Standard EBS volumes
 
+Node group creation is controlled by the following boolean flags in terraform.tfvars:
+```hcl
+create_custom_nodes  = true   # Enable custom node group with launch template
+create_bootlerocket  = false  # Enable Bottlerocket OS node group
+create_graviton      = false  # Enable ARM64 Graviton node group
+create_spot         = false   # Enable pure spot instance node group
+```
+Each flag can be set independently to create the desired combination of node groups.
+
 2. Custom Node Group with Launch Template
    - SPOT instances for cost optimization
    - Customized EBS configuration (50GB gp3 volumes)

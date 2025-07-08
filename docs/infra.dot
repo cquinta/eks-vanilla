@@ -14,6 +14,14 @@ digraph INFRA {
 (AWS::IAM::Role)", shape =rectangle ];
   "aws_kms_key.main" [ label = "aws_kms_key.main
 (AWS::KMS::Key)", shape =rectangle ];
+  "aws_eks_addon.cni" [ label = "aws_eks_addon.cni
+(AWS::EKS::Addon)", shape =rectangle ];
+  "aws_eks_addon.coredns" [ label = "aws_eks_addon.coredns
+(AWS::EKS::Addon)", shape =rectangle ];
+  "aws_eks_addon.kubeproxy" [ label = "aws_eks_addon.kubeproxy
+(AWS::EKS::Addon)", shape =rectangle ];
+  "aws_eks_addon.pod_identity" [ label = "aws_eks_addon.pod_identity
+(AWS::EKS::Addon)", shape =rectangle ];
   "aws_eks_cluster.main" -> "aws_iam_role.eks_cluster_role";
   "aws_eks_cluster.main" -> "aws_kms_key.main";
   "aws_eks_node_group.bottlerocket" -> "aws_eks_cluster.main";
@@ -22,4 +30,8 @@ digraph INFRA {
   "aws_eks_node_group.custom" -> "aws_iam_role.eks_nodes_role";
   "aws_eks_node_group.custom" -> "aws_launch_template.custom";
   "aws_launch_template.custom" -> "aws_eks_cluster.main";
+  "aws_eks_addon.cni" -> "aws_eks_cluster.main";
+  "aws_eks_addon.coredns" -> "aws_eks_cluster.main";
+  "aws_eks_addon.kubeproxy" -> "aws_eks_cluster.main";
+  "aws_eks_addon.pod_identity" -> "aws_eks_cluster.main";
 }
