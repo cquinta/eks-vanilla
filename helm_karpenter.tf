@@ -27,9 +27,15 @@ resource "helm_release" "karpenter" {
     value = aws_iam_instance_profile.nodes.name
   }
 
+
   set {
     name  = "settings.interruptionQueue"
     value = aws_sqs_queue.karpenter.name
+  }
+
+  set {
+    name  = "serviceMonitor.enabled"
+    value = "true"
   }
 
   depends_on = [

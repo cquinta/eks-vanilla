@@ -66,6 +66,29 @@ resource "helm_release" "nginx_controller" {
     #value = "DaemonSet"
   }
 
+  # Service Monitors
+
+  set {
+    name  = "controller.metrics.enabled"
+    value = "true"
+  }
+
+  set {
+    name  = "controller.metrics.serviceMonitor.enabled"
+    value = "true"
+  }
+
+  set {
+    name  = "controller.podAnnotations.prometheus\\.io/scrape"
+    value = "true"
+  }
+
+  set {
+    name  = "controller.podAnnotations.prometheus\\.io/port"
+    value = "10254"
+  }
+
+
   depends_on = [
     helm_release.karpenter
   ]
@@ -86,6 +109,6 @@ spec:
   targetType: instance
 YAML
   depends_on = [
-    helm_release.nginx_controller,aws_lb_target_group.main
+    helm_release.nginx_controller, aws_lb_target_group.main
   ]
 }

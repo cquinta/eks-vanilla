@@ -126,3 +126,24 @@ variable "nginx_limits_memory" {
   type    = string
   default = "1024Mi"
 }
+
+variable "addon_pod_identity_version" {
+  type        = string
+  default     = "v1.3.4-eksbuild.1"
+  description = "Versão do Addon do Pod Identity"
+}
+
+
+
+variable "addon_efs_csi_version" {
+  type        = string
+  default     = "v2.1.8-eksbuild.1"
+  description = "Versão do Addon do EFS CSI"
+
+}
+
+variable "grafana_host" {
+  type        = string
+  default     = "grafana.cquinta.com"
+  description = "Host do Grafana"
+}
