@@ -44,6 +44,62 @@ digraph INFRA {
 (AWS::Events::Rule)", shape =rectangle, fillcolor = "#CCE0AC" ];
   "karpenter-state-change-event-target" [ label = "karpenter-state-change-event-target
 (AWS::Events::Target)", shape =rectangle, fillcolor = "#CCE0AC" ];
+  "aws-load-balancer-controller-role" [ label = "aws-load-balancer-controller-role
+(AWS::IAM::Role)", shape =rectangle ];
+  "aws-load-balancer-controller-policy" [ label = "aws-load-balancer-controller-policy
+(AWS::IAM::Policy)", shape =rectangle ];
+  "istio-base" [ label = "istio-base
+(helm_release)", shape =rectangle, fillcolor = "#B7E0FF" ];
+  "istiod" [ label = "istiod
+(helm_release)", shape =rectangle, fillcolor = "#B7E0FF" ];
+  "istio-ingress" [ label = "istio-ingress
+(helm_release)", shape =rectangle, fillcolor = "#E78F81" ];
+  "target-binding-80" [ label = "target-binding-80
+(kubectl_manifest)", shape =rectangle ];
+  "nlb" [ label = "nlb
+(AWS::ElasticLoadBalancingV2::LoadBalancer)", shape =rectangle, fillcolor = "#E78F81" ];
+  "nlb-target-group" [ label = "nlb-target-group
+(AWS::ElasticLoadBalancingV2::TargetGroup)", shape =rectangle ];
+  "nlb-listener" [ label = "nlb-listener
+(AWS::ElasticLoadBalancingV2::Listener)", shape =rectangle ];
+  "efs-grafana" [ label = "efs-grafana
+(AWS::EFS::FileSystem)", shape =cylinder, fillcolor = "#FFF5CD" ];
+  "efs-grafana-mount-targets" [ label = "efs-grafana-mount-targets
+(AWS::EFS::MountTarget)", shape =cylinder, fillcolor = "#FFF5CD" ];
+  "efs-grafana-storage-class" [ label = "efs-grafana-storage-class
+(kubectl_manifest)", shape =cylinder, fillcolor = "#FFF5CD" ];
+  "vpc-cni-addon" [ label = "vpc-cni-addon
+(AWS::EKS::Addon)", shape =rectangle ];
+  "coredns-addon" [ label = "coredns-addon
+(AWS::EKS::Addon)", shape =rectangle ];
+  "kube-proxy-addon" [ label = "kube-proxy-addon
+(AWS::EKS::Addon)", shape =rectangle ];
+  "pod-identity-agent-addon" [ label = "pod-identity-agent-addon
+(AWS::EKS::Addon)", shape =rectangle ];
+  "efs-csi-driver-addon" [ label = "efs-csi-driver-addon
+(AWS::EKS::Addon)", shape =cylinder, fillcolor = "#FFF5CD" ];
+  "acm-certificate" [ label = "acm-certificate
+(AWS::CertificateManager::Certificate)", shape =rectangle ];
+  "route53-validation-record" [ label = "route53-validation-record
+(AWS::Route53::RecordSet)", shape =rectangle ];
+  "efs-prometheus" [ label = "efs-prometheus
+(AWS::EFS::FileSystem)", shape =cylinder, fillcolor = "#FFF5CD" ];
+  "efs-prometheus-mount-targets" [ label = "efs-prometheus-mount-targets
+(AWS::EFS::MountTarget)", shape =cylinder, fillcolor = "#FFF5CD" ];
+  "efs-prometheus-storage-class" [ label = "efs-prometheus-storage-class
+(kubectl_manifest)", shape =cylinder, fillcolor = "#FFF5CD" ];
+  "kube-state-metrics" [ label = "kube-state-metrics
+(helm_release)", shape =rectangle ];
+  "karpenter" [ label = "karpenter
+(helm_release)", shape =rectangle, fillcolor = "#B7E0FF" ];
+  "prometheus-stack" [ label = "prometheus-stack
+(helm_release)", shape =rectangle ];
+  "grafana-gateway" [ label = "grafana-gateway
+(kubectl_manifest)", shape =rectangle, fillcolor = "#E78F81" ];
+  "grafana-virtual-service" [ label = "grafana-virtual-service
+(kubectl_manifest)", shape =rectangle ];
+  "efs-security-group" [ label = "efs-security-group
+(AWS::EC2::SecurityGroup)", shape =rectangle ];
   "eks-cluster" -> "eks-cluster-role";
   "eks-cluster" -> "kms-key";
   "nodes-instance-profile" -> "eks-nodes-role";
@@ -63,4 +119,32 @@ digraph INFRA {
   "karpenter-rebalance-event-target" -> "karpenter-sqs-queue";
   "karpenter-state-change-event-target" -> "karpenter-state-change-event-rule";
   "karpenter-state-change-event-target" -> "karpenter-sqs-queue";
+  "aws-load-balancer-controller-role" -> "eks-oidc-provider";
+  "aws-load-balancer-controller-policy" -> "aws-load-balancer-controller-role";
+  "istio-base" -> "eks-cluster";
+  "istiod" -> "istio-base";
+  "istio-ingress" -> "istio-base";
+  "istio-ingress" -> "istiod";
+  "target-binding-80" -> "istio-ingress";
+  "nlb-listener" -> "nlb";
+  "nlb-listener" -> "nlb-target-group";
+  "efs-grafana-mount-targets" -> "efs-grafana";
+  "efs-grafana-storage-class" -> "eks-cluster";
+  "efs-grafana-storage-class" -> "efs-grafana";
+  "vpc-cni-addon" -> "eks-cluster";
+  "coredns-addon" -> "eks-cluster";
+  "kube-proxy-addon" -> "eks-cluster";
+  "pod-identity-agent-addon" -> "eks-cluster";
+  "efs-csi-driver-addon" -> "eks-cluster";
+  "route53-validation-record" -> "acm-certificate";
+  "efs-prometheus-mount-targets" -> "efs-prometheus";
+  "efs-prometheus-storage-class" -> "eks-cluster";
+  "efs-prometheus-storage-class" -> "efs-prometheus";
+  "kube-state-metrics" -> "eks-cluster";
+  "karpenter" -> "eks-cluster";
+  "karpenter" -> "karpenter-sqs-queue";
+  "prometheus-stack" -> "eks-cluster";
+  "prometheus-stack" -> "karpenter";
+  "grafana-gateway" -> "prometheus-stack";
+  "grafana-virtual-service" -> "prometheus-stack";
 }
