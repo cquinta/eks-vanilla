@@ -9,6 +9,12 @@ metadata:
     istio-injection: enabled
   name: nutrition
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nutrition
+  namespace: nutrition
+---
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -23,7 +29,7 @@ spec:
       name: http
       protocol: HTTP
     hosts:
-    - "health.msfidelis.com.br" 
+    - "health.cquinta.com" 
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
@@ -33,7 +39,7 @@ metadata:
 spec:
   hosts:
   - "health-api.nutrition.svc.cluster.local"
-  - "health.msfidelis.com.br"
+  - "health.cquinta.com"
   gateways:
   - health-api
   http:
@@ -65,6 +71,7 @@ spec:
         name: health-api
         version: v1
     spec:
+      serviceAccountName: nutrition
       containers:
       - image: fidelissauro/health-api:latest
         name: health-api
@@ -79,8 +86,11 @@ spec:
           value: "imc-grpc.nutrition.svc.cluster.local:30000"
         - name: RECOMMENDATIONS_SERVICE_ENDPOINT
           value: "recommendations-grpc.nutrition.svc.cluster.local:30000"
-        - name: NATS_URI
-          value: "nats://nats.nutrition.svc.cluster.local:4222"                              
+        # Configs do Health-data-offload
+        - name: MESSAGE_TYPE
+          value: "sqs"
+        - name: SQS_QUEUE_URL
+          value: "https://sqs.us-east-1.amazonaws.com/707257249187/linuxtips-cluster-health"                              
         ports:
         - containerPort: 8080
           name: http   
@@ -566,3 +576,130 @@ spec:
   selector:
     app: water-grpc
   type: ClusterIP
+---
+#############################
+###  Health-Data-Offload  ###
+#############################
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: health-data-offload
+  name: health-data-offload
+  namespace: nutrition
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: health-data-offload
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+      labels:
+        app: health-data-offload
+        name: health-data-offload
+        version: v1
+    spec:
+      serviceAccountName: nutrition
+      containers:
+      - image: fidelissauro/health-data-offload:latest
+        name: health-data-offload
+        env:
+        - name: ENVIRONMENT
+          value: "dev"
+        - name: WORKERS
+          value: "1"
+        - name: WORKERS_JITTER_MS
+          value: "10000"
+        - name: DATABASE_TYPE
+          value: "dynamodb"
+        - name: DYNAMODB_TABLE
+          value: "health-data"
+        - name: MESSAGE_TYPE
+          value: "sqs"
+        - name: SQS_QUEUE_URL
+          value: "https://sqs.us-east-1.amazonaws.com/707257249187/linuxtips-cluster-health"                              
+        ports:
+        - containerPort: 8080
+          name: http   
+        startupProbe:
+          failureThreshold: 10
+          httpGet:
+            path: /healthz
+            port: 8080
+          periodSeconds: 10
+        livenessProbe:
+          failureThreshold: 10
+          httpGet:
+            path: /healthz
+            port: 8080          
+      terminationGracePeriodSeconds: 60
+--- 
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: nutrition-aws-credentials
+  namespace: nutrition
+spec:
+  podIdentity:
+    provider: aws
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: health-data-offload-sqs
+  namespace: nutrition
+spec:
+  scaleTargetRef:
+    name: health-data-offload
+  minReplicaCount: 1
+  maxReplicaCount: 30
+  pollingInterval: 10  
+  cooldownPeriod:  30
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 60
+        scaleUp:
+          stabilizationWindowSeconds: 60          
+  triggers:
+  - type: aws-sqs-queue
+    authenticationRef:
+      name: nutrition-aws-credentials  
+    metadata:
+      queueURL: "https://sqs.us-east-1.amazonaws.com/707257249187/linuxtips-cluster-health"
+      awsRegion: "us-east-1"
+      queueLength: "20"  # <---- Quantidade de mensagens por pod. No exemplo, 50 Mensagens. 
+---
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: sqs
+  namespace: nutrition
+spec:
+  hosts:
+  - sqs.us-east-1.amazonaws.com
+  location: MESH_EXTERNAL
+  ports:
+  - number: 443
+    name: https
+    protocol: TLS
+  resolution: DNS
+---
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: dynamodb
+  namespace: nutrition
+spec:
+  hosts:
+  - dynamodb.us-east-1.amazonaws.com 
+  location: MESH_EXTERNAL
+  ports:
+  - number: 443
+    name: https
+    protocol: TLS
+  resolution: DNS

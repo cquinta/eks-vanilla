@@ -161,3 +161,9 @@ variable "kiali_version" {
   description = "value of kiali version"
   default     = "2.5"
 } 
+variable "keda_version" {
+  type        = string
+  description = "value of keda version"
+  default     = "2.16.0"
+  
+}
