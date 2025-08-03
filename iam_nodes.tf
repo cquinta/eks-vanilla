@@ -51,6 +51,7 @@ resource "aws_iam_role_policy_attachment" "cloudwatch" {
 }
 
 resource "aws_iam_instance_profile" "nodes" {
-  name = var.project_name
+  #name = var.project_name
+  name = format("%s-nodes-role", var.project_name)
   role = aws_iam_role.eks_nodes_role.name
 }

@@ -81,7 +81,7 @@ spec:
       labels:
         app: chip
         name: chip
-        version: v14
+        version: v17
     spec:
       topologySpreadConstraints:
       - maxSkew: 1
@@ -136,7 +136,7 @@ spec:
         - name: CHAOS_MONKEY_MEMORY
           value: "true"    
         - name: VERSION
-          value: "v14"                                              
+          value: "v17"                                              
       terminationGracePeriodSeconds: 60
 ---
 apiVersion: networking.istio.io/v1alpha3
