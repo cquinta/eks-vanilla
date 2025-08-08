@@ -59,50 +59,103 @@ terraform apply
 
 1. Configure kubectl for your new cluster:
 ```bash
-aws eks update-kubeconfig --name <cluster-name> --region <region>
+aws eks --region us-east-1 update-kubeconfig --name linuxtips-cluster
 ```
 
 2. Verify the installation:
 ```bash
-kubectl get nodes
+kubectl get nodes -o custom-columns=NAME:.metadata.name,CAPACITY_TYPE:.metadata.labels.capacity/type
 kubectl get pods -n istio-system
 ```
 
-3. Access Grafana dashboard:
+3. Monitor Karpenter node provisioning:
 ```bash
+kubectl logs -l app.kubernetes.io/name=karpenter -n karpenter -f
+kubectl get nodeclaims -n karpenter
+```
+
+4. Access Grafana dashboard:
+```bash
+# Default credentials:
+# Username: admin
+# Password: prom-operator
 echo "Grafana URL: https://${var.grafana_host}"
-kubectl get secret prometheus-grafana -n prometheus -o jsonpath="{.data.admin-password}" | base64 --decode
 ```
 
-### More Detailed Examples
+### Application Testing
 
-1. Deploy a sample application with Istio injection:
-```yaml
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: sample-app
-  labels:
-    istio-injection: enabled
----
-apiVersion: apps/v1
-kind: Deployment
-# ... rest of the application deployment
+#### Chip Application API
+Test the filesystem operations:
+```bash
+# List files
+curl -X POST http://chip.chip.svc.cluster.local:8080/filesystem/ls -i -d '{"path": "/data"}'
+
+# Write file
+curl -X POST http://chip.chip.svc.cluster.local:8080/filesystem/write -i -d '{"path": "/data/linuxtips-2", "content": "dGVzdGUK"}'
+
+# Read file
+curl -X POST http://chip.chip.svc.cluster.local:8080/filesystem/cat -i -d '{"path": "/data/linuxtips-2"}'
+
+# System environment
+curl -X POST http://chip.chip.svc.cluster.local:8080/system/environment
+
+# CPU burn test
+curl http://chip.cquinta.com/burn/cpu -iv
 ```
 
-2. Configure Prometheus monitoring:
-```yaml
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: sample-app
-  namespace: monitoring
-spec:
-  selector:
-    matchLabels:
-      app: sample-app
-  endpoints:
-    - port: metrics
+#### Health API Testing
+Test the health calculator API:
+```bash
+# Single request
+curl --location --request POST 'http://health.cquinta.com/calculator' \
+--header 'Content-Type: application/json' \
+--data-raw '{ 
+   "age": 26,
+   "weight": 90.0,
+   "height": 1.77,
+   "gender": "M", 
+   "activity_intensity": "very_active"
+}' --silent | jq .
+
+# Load testing (continuous requests)
+while true; do 
+  curl --location --request POST 'http://health.cquinta.com/calculator' \
+  --header 'Content-Type: application/json' \
+  --data-raw '{ 
+     "age": 26,
+     "weight": 90.0,
+     "height": 1.77,
+     "gender": "M", 
+     "activity_intensity": "very_active"
+  }' --silent | jq .
+  echo
+done
+```
+
+### Helm Chart Management
+
+```bash
+# Debug helm template
+helm template debug helm-cr
+
+# Install or upgrade chart
+helm upgrade helm-cr helm-cr --install
+
+# Package helm chart
+helm package helm-cr
+```
+
+### Debugging and Utilities
+
+```bash
+# Create bastion pod for debugging
+kubectl run bastionpod --rm -i --tty --image ubuntu -n default -- /bin/bash
+
+# Check AWS addon versions
+aws eks describe-addon-versions --addon-name aws-mountpoint-s3-csi-driver
+
+# Test with custom host header
+curl <endpoint> -H "Host: xpto.com.br"
 ```
 
 ### Troubleshooting
