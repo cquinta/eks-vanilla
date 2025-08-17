@@ -40,7 +40,11 @@ resource "helm_release" "karpenter" {
 
   depends_on = [
     aws_eks_cluster.main,
-    aws_eks_fargate_profile.karpenter
+    aws_eks_fargate_profile.karpenter,
+    aws_iam_instance_profile.nodes,
+    aws_iam_role.eks_nodes_role,
+    aws_iam_role.karpenter
+  
   ]
 
 }

@@ -2,7 +2,7 @@ app:
   name: cr
   namespace: cr
   image:
-    repository: nginx
+    repository: cquinta/moc-app
     tag: latest
     pullPolicy: IfNotPresent
   createNamespace: true
@@ -14,11 +14,11 @@ app:
       cpu: 100m
       memory: 128Mi
     limits:
-      cpu: 200m
+      cpu: 500m
       memory: 256Mi
     autoscaling:
       min: 4
-      max: 20
+      max: 30
 
     nodepool:
       enabled: true
@@ -30,22 +30,22 @@ app:
       failureThreshold: 10
       periodSeconds: 10
       httpGet:
-        path: /
-        port: 80
+        path: /healthcheck
+        port: 8000
     readinessProbe:
       enabled: true
       failureThreshold: 10
       periodSeconds: 10
       httpGet:
-        path: /
-        port: 80    
+        path: /healthcheck
+        port: 8000  
     livenessProbe:
       enabled: true
       failureThreshold: 10
       periodSeconds: 10
       httpGet:
-        path: /
-        port: 80
+        path: /healthcheck
+        port: 8000
 
   envs:
     - name: ENV
@@ -53,16 +53,16 @@ app:
     - name: FOO
       value: "bar"
     - name: VERSION
-      value: v10
+      value: v3
 
   type: ClusterIP
   ports:
     - name: http
       port: 80
-      targetPort: 80
-    - name: https
-      port: 443
-      targetPort: 443
+      targetPort: 8000
+    #- name: https
+    #  port: 443
+    #  targetPort: 443
 
   istio:
     host: cr.cquinta.com
@@ -142,11 +142,11 @@ app:
       pollingInterval: 10
 
     prometheus:
-    # - name: keda-scale-tps
-    #   metricName: istio_requests_total
-    #   query: "sum(rate(istio_requests_total{destination_service_name=\"cr\"}[1m]))"
-    #   serverAddress: http://prometheus-kube-prometheus-prometheus.prometheus.svc.cluster.local:9090
-    #   threshold: "10"
+     - name: keda-scale-tps
+       metricName: istio_requests_total
+       query: "sum(rate(istio_requests_total{destination_service_name=\"cr\"}[1m]))"
+       serverAddress: http://prometheus-kube-prometheus-prometheus.prometheus.svc.cluster.local:9090
+       threshold: "3"
      
     cron:
     # - name: scale-up
