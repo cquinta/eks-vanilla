@@ -44,7 +44,7 @@ resource "helm_release" "karpenter" {
     aws_iam_instance_profile.nodes,
     aws_iam_role.eks_nodes_role,
     aws_iam_role.karpenter
-  
+
   ]
 
 }

@@ -12,6 +12,6 @@ resource "helm_release" "keda" {
     aws_eks_cluster.main,
     helm_release.karpenter,
     helm_release.keda
-    
+
   ]
 }
