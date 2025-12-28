@@ -54,3 +54,7 @@ variable "istio_cpu_threshold" {
 variable "istio_ssm_target_group" {
   type = string
 }
+
+variable "argocd_deployer_role" {
+  default = "arn:aws:iam::707257249187:role/linuxtips-control-plane-argocd-deployer"
+}

@@ -1,5 +1,6 @@
 provider "aws" {
   region = var.region
+  
 }
 
 terraform {
@@ -7,6 +8,10 @@ terraform {
     kubectl = {
       source  = "gavinbunney/kubectl"
       version = ">= 1.7.0"
+    }
+    aws = {
+      source  = "hashicorp/aws"
+      version = "= 6.16.0"
     }
   }
 }

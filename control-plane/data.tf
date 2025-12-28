@@ -7,6 +7,12 @@ data "aws_ssm_parameter" "subnets" {
   name  = var.ssm_subnets[count.index]
 }
 
+data "aws_ssm_parameter" "lb_subnets" {
+  count = length(var.ssm_lb_subnets)
+  name  = var.ssm_lb_subnets[count.index]
+}
+
+
 data "aws_eks_cluster_auth" "default" {
   name = aws_eks_cluster.main.id
 }

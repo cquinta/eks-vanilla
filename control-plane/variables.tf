@@ -15,6 +15,9 @@ variable "ssm_subnets" {
   type = list(string)
 }
 
+variable "ssm_lb_subnets" {
+  type = list(string)
+}
 variable "node_group_temp_desired" {
   type    = number
   default = 2
@@ -31,5 +34,16 @@ variable "karpenter_capacity" {
     capacity_type      = list(string)
     availability_zones = list(string)
   }))
+}
+
+variable "clusters_configs" {
+  default = [
+    {
+      cluster_name = "linuxtips-cluster-01"
+    },
+    {
+      cluster_name = "linuxtips-cluster-02"
+    }
+  ]
 }
 
