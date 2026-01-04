@@ -16,5 +16,5 @@ data "aws_iam_policy_document" "argocd_deployer_assume_role" {
 
 resource "aws_iam_role" "argo_deployer" {
   assume_role_policy = data.aws_iam_policy_document.argocd_deployer_assume_role.json
-  name               = format("%s-argocd-deployer", var.project_name)
+  name               = format("%s-argocd-deployer", "linuxtips-control-plane")
 }

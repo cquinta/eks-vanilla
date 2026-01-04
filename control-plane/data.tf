@@ -23,4 +23,8 @@ data "aws_ssm_parameter" "karpenter_ami" {
   name  = var.karpenter_capacity[count.index].ami_ssm
 }
 
+data "aws_caller_identity" "current" {
+  
+}
+
 

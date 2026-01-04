@@ -22,7 +22,7 @@ stringData:
     {
       "awsAuthConfig": {
         "clusterName": "${data.aws_eks_cluster.members[count.index].id}",
-        "roleARN": "${aws_iam_role.argo_deployer.arn}"
+        "roleARN": "arn:aws:iam::707257249187:role/linuxtips-control-plane-argocd-deployer"
       },
       "tlsClientConfig": {
         "insecure": false,

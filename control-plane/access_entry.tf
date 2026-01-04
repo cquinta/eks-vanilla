@@ -9,3 +9,4 @@ resource "aws_eks_access_entry" "fargate" {
   principal_arn = aws_iam_role.fargate.arn
   type          = "FARGATE_LINUX"
 }
+

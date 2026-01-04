@@ -6,7 +6,7 @@ variable "region" {
 }
 
 variable "k8s_version" {
-  default = "1.33"
+  default = "1.34"
 }
 
 variable "ssm_vpc" {}
@@ -46,4 +46,7 @@ variable "clusters_configs" {
     }
   ]
 }
+
+
+
 

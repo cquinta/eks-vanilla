@@ -42,3 +42,5 @@ rm -rf  .terraform
 terraform init -backend-config=environment/prod/backend.tfvars
 
 terraform apply -var-file=environment/prod/terraform.tfvars --auto-approve
+
+
